@@ -1,53 +1,44 @@
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+
 public class Sales{
 
-	// To convert String to number
-	public static int getNumber(String str) {
-		int base = 10, num = 0;
-		int length = str.length(), index = 0;
-		while (index < length) {
-			num *= base;
-			num += str.charAt(index++) - '0';
-		}
-		return num;
-	}
-
-	public static void main(String []args) throws FileNotFoundException, IOException {
+	public static BufferedReader getBufferedReader(String path) {
 		BufferedReader br = null;
 		try {
-		    br = new BufferedReader (new FileReader("sales-data.txt"));
+		    br = new BufferedReader (new FileReader(path));
 		} catch (FileNotFoundException ex) {
 		    System.out.println(ex);
 		}
-		if (br != null)
-			System.out.println(br.readLine());
-		else {
-			System.out.println("NULL");
+		return br;
+	}
+
+	public static void main(String []args) throws FileNotFoundException, IOException {
+		BufferedReader br = getBufferedReader("sales-data.txt");
+		if (br == null)
 			return;
-		}
+		br.readLine();
 
-
-
-		int totalSales = 0;
-		HashMap<String, Integer> mapPriceCatalogue = new HashMap<>();
 		List<HashMap<String, int[]>> mapPolularItem = new ArrayList<HashMap<String, int[]>>();
 		for (int i = 0; i < 12; i++)
 			mapPolularItem.add(new HashMap<String, int[]>());
 
+		int totalSales = 0;
 		String line = br.readLine();
 		while (line != null) {
 			String arr[] = line.split(",");
 			String date = arr[0];
 			String sku = arr[1];
-			int unit_price = getNumber(arr[2]);
-			int quantity = getNumber(arr[3]);
-			int total = getNumber(arr[4]);
+			int unit_price = Integer.parseInt(arr[2]);
+			int quantity = Integer.parseInt(arr[3]);
+			int total = Integer.parseInt(arr[4]);
 			String date_arr[] = date.split("-");
-			int month = getNumber(date_arr[1]);
-
-			if (!mapPriceCatalogue.containsKey(sku))
-				mapPriceCatalogue.put(sku, unit_price);
+			int month = Integer.parseInt(date_arr[1]);
 
 			totalSales += total;
 			
@@ -61,85 +52,62 @@ public class Sales{
 			map.put(sku, temp_arr);
 
 			line = br.readLine();
+			month++;
 		}
 		
 		// Qestion 1
 		System.out.println("\n----- Total sales -----");
-		System.out.println("Total Sales = "+totalSales);
+		System.out.println("Total Sales = " + totalSales);
 		
-		// Qestion 2
-		int m = 1;
-		System.out.println("\n----- Month wise sales total -----");
+		int month = 1;
 		for (HashMap<String, int[]> map : mapPolularItem) {
+			if (map.isEmpty())
+				continue;
 			int total = 0;
+			int maxQuantity = 0;
+			int maxRevenue = 0;
+			int minOrders = Integer.MAX_VALUE;
+			int maxOrders = Integer.MIN_VALUE;
+			double avg_orders = 0;
+			String mostPoplularItem = "";
+			String mostRevenueItem = "";
+			
 			for (String key : map.keySet()) {
-				int temp_arr[] = map.get(key);
-				total += temp_arr[0] * temp_arr[temp_arr.length - 1];
-			}
-			if (total > 0)
-				System.out.println("Total sales in " + (m++) + " month is " + total);
-		}
-		
-		
-		// Qestion 3
-		System.out.println("\n----- Most Popular Item Month wise -----");
-		m = 1;
-		String[] mostPoplularItem = new String[12];
-		for (HashMap<String, int[]> map : mapPolularItem) {
-			int max = 0;
-			String item = null;
-			for (String key : map.keySet()) {
-				int temp_arr[] = map.get(key);
-				int q = temp_arr[0];
-				if (q > max)
-				{
-					max = q;
-					item = key;
+				int temp_array[] = map.get(key);
+				
+				// Question 2
+				total += temp_array[0] * temp_array[temp_array.length - 1];
+
+				// Question 3
+				int quantity = temp_array[0];
+				if (quantity > maxQuantity) {
+					maxQuantity = quantity;
+					mostPoplularItem = key;
 				}
-			}
-			if (max > 0) {
-				System.out.println("Popular Item in " + m + " month is " + item + " with " + max + " quantity sold.");
-				mostPoplularItem[m - 1] = item;
-				m++;
+
+			// Question 4
+				int revenue = temp_array[0] * temp_array[temp_array.length - 1];
+				if (revenue > maxRevenue) {
+					maxRevenue = revenue;
+					mostRevenueItem = key;
+				}
 			} 
-		}
 
-		// Qestion 4
-		System.out.println("\n----- Item generating most revenue in each month -----");
-		m = 1;
-		for (HashMap<String, int[]> map : mapPolularItem) {
-			int max = 0;
-			String item = "";
-			for (String key : map.keySet()) {
-				int temp_arr[] = map.get(key);
-				int q = temp_arr[0] * mapPriceCatalogue.get(key);
-				if (q > max)
-				{
-					max = q;
-					item = key;
-				}
-			}
-			if (max > 0)
-				System.out.println("Item generating most revenue " + (m++) + " month is " + item + " with " + max + " quantity sold."); 
-		}
+			// Question 5
+			int mostPoplularItemArray[] = map.get(mostPoplularItem);
+			minOrders = mostPoplularItemArray[1];
+			maxOrders = mostPoplularItemArray[2];
+			avg_orders = Math.round((double)mostPoplularItemArray[0] / (double)mostPoplularItemArray[3]);
 
-		// Qestion 5
-		System.out.println("\n----- Minimum, Maximum and Average number of orders in each month -----");
-		m = 1;
-		for (HashMap<String, int[]> map : mapPolularItem) {
-			String item = mostPoplularItem[m - 1];
-			if (item != null) {
-				int temp_arr[] = map.get(item);
-				System.out.println(temp_arr.length + " " + item);
-				int min = temp_arr[1];
-				int max = temp_arr[2];
-				int avg_orders = temp_arr[0] / temp_arr[3];
-				System.out.println("Min, Max & Average Orders for " + m + " month item " + item);
-				System.out.println("Min Order " + min);
-				System.out.println("Max Order " + max);
-				System.out.println("Average Order " + avg_orders);
-			}
-			m++;
+
+			System.out.println("======== Data for Month " + (month++) + " ========");
+			System.out.println("Total Sales in the Month = " + total);
+			System.out.println("Most Popular Item = " + mostPoplularItem + " with " + maxQuantity + " units sold.");
+			System.out.println("Item generating most revenue = " + mostRevenueItem + " by generating " + maxRevenue  +" revenue.");
+			System.out.println("Min Order " + minOrders);
+			System.out.println("Max Order " + maxOrders);
+			System.out.printf("Average Order %.2f", avg_orders);
+			System.out.println();
 		}
 	}
 }
